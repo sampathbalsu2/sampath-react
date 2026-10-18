@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Namasthe React</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+        }
+
+        form {
+            display: grid;
+            gap: 0.75rem;
+            max-width: 20rem;
+        }
+
+        label {
+            display: grid;
+            gap: 0.25rem;
+        }
+
+        input, button {
+            font: inherit;
+            padding: 0.5rem;
+        }
+
+        .search {
+            margin-top: 2rem;
+        }
+
+        .message {
+            margin-top: 1rem;
+        }
+
+        .results {
+            padding-left: 1.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+    </div>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+<script>
+    const h = React.createElement;
+    const STORAGE_KEY = 'namastheReact.people';
+
+    function App() {
+        const [person, setPerson] = React.useState({ name: '', age: '', designation: '' });
+        const [query, setQuery] = React.useState('');
+        const [results, setResults] = React.useState(null);
+        const [message, setMessage] = React.useState('');
+
+        function loadRecords() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored === null) return [];
+
+            const records = JSON.parse(stored);
+            if (!Array.isArray(records)) {
+                throw new Error('Saved data is invalid. Please clear this app’s saved data and try again.');
+            }
+            return records;
+        }
+
+        function savePerson(event) {
+            event.preventDefault();
+            try {
+                const records = loadRecords();
+                records.push(person);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+                setPerson({ name: '', age: '', designation: '' });
+                setMessage('Record saved in this browser.');
+                setResults(null);
+            } catch (error) {
+                setMessage(`Could not save the record: ${error.message}`);
+            }
+        }
+
+        function searchRecords(event) {
+            event.preventDefault();
+            try {
+                const term = query.trim().toLowerCase();
+                const matches = loadRecords().filter((record) =>
+                    [record.name, record.age, record.designation]
+                        .some((value) => String(value).toLowerCase().includes(term))
+                );
+                setResults(matches);
+                setMessage(matches.length ? '' : 'No matching records found.');
+            } catch (error) {
+                setResults(null);
+                setMessage(`Could not search saved records: ${error.message}`);
+            }
+        }
+
+        return h(React.Fragment, null,
+            h('form', { onSubmit: savePerson },
+                h('label', null, 'Name',
+                    h('input', {
+                        name: 'name', type: 'text', autoComplete: 'name', required: true,
+                        value: person.name,
+                        onChange: (event) => setPerson({ ...person, name: event.target.value })
+                    })),
+                h('label', null, 'Age',
+                    h('input', {
+                        name: 'age', type: 'number', min: '0', required: true,
+                        value: person.age,
+                        onChange: (event) => setPerson({ ...person, age: event.target.value })
+                    })),
+                h('label', null, 'Designation',
+                    h('input', {
+                        name: 'designation', type: 'text', required: true,
+                        value: person.designation,
+                        onChange: (event) => setPerson({ ...person, designation: event.target.value })
+                    })),
+                h('button', { type: 'submit' }, 'Save')
+            ),
+            h('form', { className: 'search', onSubmit: searchRecords },
+                h('label', null, 'Search saved records',
+                    h('input', {
+                        name: 'search', type: 'search', value: query,
+                        onChange: (event) => setQuery(event.target.value)
+                    })),
+                h('button', { type: 'submit' }, 'Search')
+            ),
+            message && h('p', { className: 'message', role: 'status' }, message),
+            results && results.length > 0 && h('ul', { className: 'results' },
+                results.map((record, index) => h('li', { key: index },
+                    `${record.name} — Age: ${record.age} — ${record.designation}`
+                ))
+            )
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(h(App));
+</script>
+
+</body>
+</html>
